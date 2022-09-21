@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import Swal from 'sweetalert2'
-import { ethers, providers } from 'ethers'
+import { ethers } from 'ethers'
 const ethAmount = ref('')
 const recipientAddress = ref('')
 const account = ref<string[]>([])
-const currentChain = ref('')
-const provider = ref<ethers.providers.Web3Provider>()
+const currentChain = ref<ethers.providers.Network>()
 
 // 连接钱包
 const connectToWallet = async () => {
@@ -16,20 +15,15 @@ const connectToWallet = async () => {
     })
     return
   }
-  provider.value = new ethers.providers.Web3Provider(window.ethereum)
-
-  // 监听当前链 id
-  provider.value.addListener('chainChanged', (chain) => {
-    currentChain.value = chain
-  })
+  const provider = new ethers.providers.Web3Provider(window.ethereum)
 
   try {
     // 连接钱包
-    const acct = await provider.value.send('eth_requestAccounts', [])
+    const acct = await provider.send('eth_requestAccounts', [])
     account.value = acct
 
-    // 获取当前链 id
-    currentChain.value = await provider.value.send('eth_chainId', [])
+    // 获取当前链名称
+    currentChain.value = await provider.getNetwork()
   }
   catch (e) {
     Swal.fire({
@@ -40,43 +34,51 @@ const connectToWallet = async () => {
 
 // 开始转账
 const go = async () => {
-  if (!provider.value) {
+  if (!window.ethereum) {
+    // 如果没有被注入变量，说明钱包扩展不存在
     Swal.fire({
-      text: '没有连接至钱包',
+      text: '你没有安装任何一个兼容的 ETH 扩展钱包',
     })
     return
   }
-  const p = unref(provider)
-  if (!p) {
-    Swal.fire({
-      text: '没有连接至钱包',
-    })
-    return
-  }
+  const provider = new ethers.providers.Web3Provider(window.ethereum)
   // 获取签名者
-  const signer = p.getSigner()
+  const signer = provider.getSigner()
   try {
     // 发送交易
     const tx = await signer.sendTransaction({
       to: recipientAddress.value,
       value: ethers.utils.parseEther(ethAmount.value),
-      customData: {
-        Hello: `This is LemonNeko's transaction ${Date.now()}`,
-      },
+    })
+    Swal.fire({
+      text: `交易已发送 ${tx.hash}`,
     })
     // 等待至少两个区块确认
     await tx.wait(2)
     Swal.fire({
-      text: '交易已被确认',
+      text: `交易已发送 ${tx.hash}`,
     })
   }
   catch (e) {
-    // TODO: TypeError: 'get' on proxy: property '_network' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')
-    console.log(e)
-    // 发送失败
-    Swal.fire({
-      text: '交易发送失败',
-    })
+    const error = e as Error
+    if (error.message.includes('reject')) {
+      // 交易被拒绝
+      Swal.fire({
+        text: '你拒绝了交易',
+      })
+    }
+    else if (error.message.includes('too many decimal points')) {
+      // 通证数量格式不正确
+      Swal.fire({
+        text: '通证数量格式不正确',
+      })
+    }
+    else {
+      // 其它错误
+      Swal.fire({
+        text: `交易发送失败 ${error.message}`,
+      })
+    }
   }
 }
 </script>
@@ -87,15 +89,13 @@ const go = async () => {
       <div i-carbon-campsite inline-block />
     </div>
     <p>
-      <a rel="noreferrer" href="https://github.com/antfu/vitesse" target="_blank">
-        Learn Ethers
-      </a>
+      Learn Ethers
     </p>
     <p>
       <em text-sm opacity-75>本示例在 ETH Rinkeby 测试网上运行，你需要安装 ETH 钱包才能继续。</em>
     </p>
     <p>
-      <em text-sm opacity-75>当前网络：{{ currentChain }}</em>
+      <em text-sm opacity-75>当前网络：{{ currentChain?.name }}</em>
     </p>
     <!-- 显示已连接地址 -->
     <p v-for="acct of account" :key="acct">
@@ -147,7 +147,7 @@ const go = async () => {
       <!-- 需要确保链 id 为 0x04，测试网，才能转账 -->
       <button
         btn m-3 text-sm
-        :disabled="!account.length || !ethAmount || !recipientAddress || currentChain !== '0x4'"
+        :disabled="!account.length || !ethAmount || !recipientAddress || currentChain?.name !== 'rinkeby'"
         @click="go"
       >
         开始转账
