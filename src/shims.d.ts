@@ -1,6 +1,9 @@
 declare interface Window {
   // extend the window
-  ethereum: any
+  ethereum: import('ethers').providers.ExternalProvider & {
+    on: (event: string, handler: (...arg: any[]) => any) => void,
+    addListener: (event: string, handler: (...arg: any[]) => any) => void,
+  }
 }
 
 // with vite-plugin-vue-markdown, markdown files can be treated as Vue components
