@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import Swal from 'sweetalert2'
 import { ethers } from 'ethers'
+import WalletConnect from '@walletconnect/client'
+import QRCodeModal from '@walletconnect/qrcode-modal'
+
 const account = ref<string[]>([])
 const currentChain = ref('')
 
@@ -56,14 +59,63 @@ const getProvider = (property: ProviderName): MyProvider | undefined => {
 }
 
 /**
+ * 使用 WalletConnect 开源协议进行连接
+ * https://docs.walletconnect.com/quick-start/dapps/client
+ */
+const connectToWalletConnect = async () => {
+// Create a connector
+  const connector = new WalletConnect({
+    bridge: 'https://bridge.walletconnect.org', // Required
+    qrcodeModal: QRCodeModal,
+  })
+  // 如果没有连接，尝试连接
+  if (!connector.connected) {
+    connector.createSession()
+  }
+  else {
+    // 已连接，直接获取账户信息
+    account.value = connector.accounts
+    currentChain.value = connector.chainId.toString(16)
+  }
+
+  // 监听连接事件
+  connector.on('connect', (err, payload) => {
+    if (err) {
+      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+      return
+    }
+    account.value = payload.params[0].accounts
+    currentChain.value = payload.params[0].chainId
+  })
+  // 监听断开事件
+  connector.on('disconnect', (err, payload) => {
+    if (err) {
+      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+      return
+    }
+    // 移除账户和网络信息
+    account.value = []
+    currentChain.value = ''
+  })
+  // 监听会话更新事件
+  // 当切换网络或者账户时会触发
+  connector.on('session_update', (err, payload) => {
+    if (err) {
+      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+      return
+    }
+    account.value = payload.params[0].accounts
+    currentChain.value = payload.params[0].chainId
+  })
+}
+
+/**
  * 连接钱包
  * @param property 用于检测是否已安装钱包
  */
 const connectToWallet = async (providerName: ProviderName) => {
   if (providerName === 'Wallet Connect') {
-    Swal.fire({
-      text: `暂未支持${providerName}`,
-    })
+    connectToWalletConnect()
     return
   }
   const p = getProvider(providerName)
