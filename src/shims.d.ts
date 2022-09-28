@@ -1,9 +1,14 @@
+declare type MyProvider = import('ethers').providers.ExternalProvider & {
+  on: (event: string, handler: (...arg: any[]) => any) => void,
+  addListener: (event: string, handler: (...arg: any[]) => any) => void,
+  providers?: MyProvider[],
+  [p: string]: boolean
+}
+
 declare interface Window {
   // extend the window
-  ethereum: import('ethers').providers.ExternalProvider & {
-    on: (event: string, handler: (...arg: any[]) => any) => void,
-    addListener: (event: string, handler: (...arg: any[]) => any) => void,
-  }
+  ethereum?: MyProvider
+  BinanceChain?: MyProvider
 }
 
 // with vite-plugin-vue-markdown, markdown files can be treated as Vue components
