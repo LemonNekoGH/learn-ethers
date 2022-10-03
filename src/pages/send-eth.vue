@@ -1,39 +1,16 @@
 <script setup lang="ts">
 import Swal from 'sweetalert2'
 import { ethers } from 'ethers'
+import { storeToRefs } from 'pinia'
 const ethAmount = ref('')
 const recipientAddress = ref('')
-const account = ref<string[]>([])
-const currentChain = ref<ethers.providers.Network>()
 
-// 连接钱包
-const connectToWallet = async () => {
-  if (!window.ethereum) {
-    // 如果没有被注入变量，说明钱包扩展不存在
-    Swal.fire({
-      text: '你没有安装任何一个兼容的 ETH 扩展钱包',
-    })
-    return
-  }
-  const provider = new ethers.providers.Web3Provider(window.ethereum)
-
-  try {
-    // 连接钱包
-    const acct = await provider.send('eth_requestAccounts', [])
-    account.value = acct
-
-    // 获取当前链名称
-    currentChain.value = await provider.getNetwork()
-  }
-  catch (e) {
-    Swal.fire({
-      text: '你取消了连接钱包',
-    })
-  }
-}
+const user = useUserStore()
+const { address } = storeToRefs(user)
 
 // 开始转账
 const go = async () => {
+  // TODO: 改成 wallet connect 兼容的版本
   if (!window.ethereum) {
     // 如果没有被注入变量，说明钱包扩展不存在
     Swal.fire({
@@ -85,24 +62,7 @@ const go = async () => {
 
 <template>
   <div>
-    <div text-4xl>
-      <div i-carbon-campsite inline-block />
-    </div>
-    <p>
-      Learn Ethers
-    </p>
-    <p>
-      <em text-sm opacity-75>本示例在 ETH Goerli 测试网上运行，你需要安装 ETH 钱包才能继续。</em>
-    </p>
-    <p>
-      <em text-sm opacity-75>当前网络：{{ currentChain?.name }}</em>
-    </p>
-    <!-- 显示已连接地址 -->
-    <p v-for="acct of account" :key="acct">
-      <em text-sm opacity-75>已连接：{{ acct }}</em>
-    </p>
-
-    <div py-4 />
+    <ConnectStatus />
 
     <input
       id="input"
@@ -137,17 +97,9 @@ const go = async () => {
     <label class="hidden" for="input2">输入接收地址</label>
 
     <div>
-      <button
-        v-if="!account.length"
-        btn m-3 text-sm
-        @click="connectToWallet"
-      >
-        连接钱包
-      </button>
-      <!-- 需要确保在 goerli 测试网，才能转账 -->
+      <ConnectWallet v-if="!address.length" />
       <button
         btn m-3 text-sm
-        :disabled="!account.length || !ethAmount || !recipientAddress || currentChain?.name !== 'goerli'"
         @click="go"
       >
         开始转账
