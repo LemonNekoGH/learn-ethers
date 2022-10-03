@@ -4,8 +4,8 @@ import { ethers } from 'ethers'
 import WalletConnect from '@walletconnect/client'
 import QRCodeModal from '@walletconnect/qrcode-modal'
 import { storeToRefs } from 'pinia'
-import type { ProviderName } from '~/types'
-import { providerMap, providerNames } from '~/types'
+import type { ProviderName } from '~/utils/eth'
+import { getProvider, providerNames } from '~/utils/eth'
 
 const { address: account, chainId: currentChain, providerName } = storeToRefs(useUserStore())
 
@@ -20,40 +20,6 @@ const handleAccountChanged = (e: string[]) => {
 
 // 是否显示连接弹窗
 const showConnectDialog = ref(false)
-
-/**
-     * 从注入的 window.ethereum 中取出需要的提供者
-     * @param property 用于检测是否是需要的那个
-     */
-const getProvider = (property: ProviderName): MyProvider | undefined => {
-  // 标准钱包连接
-  if (property === 'Wallet Connect')
-    return
-
-  // 币安钱包不使用标准的 window.ethereum
-  if (property === 'Binance Wallet') {
-    if (window.BinanceChain)
-      return window.BinanceChain
-
-    return
-  }
-  // 检测标准的 window.ethereum
-  if (!window.ethereum)
-    return
-
-  // 有多个钱包
-  // 先检查多个钱包的情况，因为如果多个钱包都注入了 window.ethereum 变量，isMetaMask 或者其它的属性都可能为 true，但是调用起来的并不一定是 MetaMask
-  if (window.ethereum.providers) {
-    for (const p of window.ethereum.providers) {
-      if (p[providerMap[property]])
-        return p
-    }
-  }
-
-  // 检测是否是需要的提供者
-  if (window.ethereum[providerMap[property]])
-    return window.ethereum
-}
 
 /**
      * 使用 WalletConnect 开源协议进行连接
