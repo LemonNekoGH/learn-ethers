@@ -4,7 +4,7 @@ import type { ProviderName } from '~/utils/eth'
 export const useUserStore = defineStore('user', () => {
   const address = ref<string[]>([])
   const chainId = ref('')
-  // 把 provider 保存起来备用
+  // 把 provider 保存起来备用，如果要直接存 provider 对象，没有必要用 ref 包裹起来
   const providerName = ref<ProviderName | undefined>()
   const isGoerliChain = computed(() => chainId.value === 'goerli' || parseInt(chainId.value) === 5)
 
