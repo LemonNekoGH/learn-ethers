@@ -10,6 +10,7 @@ const routes = ref<{
   { name: '连接钱包', to: '/connect-wallet' },
   { name: '发送 ETH', to: '/send-eth' },
   { name: '发送其它代币', to: '/send-token' },
+  { name: '与简单合约交互', to: '/contract-interact' },
 ])
 
 const user = useUserStore()

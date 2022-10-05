@@ -96,6 +96,7 @@ const connectToWallet = async (pn: ProviderName) => {
   try {
     // 连接钱包
     const provider = new ethers.providers.Web3Provider(p)
+    providerName.value = pn
     const acct = await provider.send('eth_requestAccounts', [])
     account.value = acct
     currentChain.value = (await provider.getNetwork()).chainId.toString(16)
@@ -103,8 +104,6 @@ const connectToWallet = async (pn: ProviderName) => {
     // window.BinanceChain 不支持 addListener 别名
     p.on('chainChanged', handleChainChanged)
     p.on('accountsChanged', handleAccountChanged)
-
-    providerName.value = pn
   }
   catch (e) {
     Swal.fire({
