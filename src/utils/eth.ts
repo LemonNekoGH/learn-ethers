@@ -1,5 +1,7 @@
 // https://github.com/WalletConnect/walletconnect-monorepo/issues/341
 import WalletConnectProvider from '@walletconnect/web3-provider/dist/umd/index.min.js'
+import { ethers } from 'ethers'
+import HelloWorld from '~/abi/HelloWorld.json'
 
 export const providerNames = ['MetaMask', 'Coinbase Wallet', 'Trust Wallet', 'Binance Wallet', 'Wallet Connect'] as const
 export type ProviderName = typeof providerNames[number]
@@ -44,4 +46,14 @@ export const getProvider = (property: ProviderName): MyProvider | WalletConnectP
   // 检测是否是需要的提供者
   if (window.ethereum[providerMap[property]])
     return window.ethereum
+}
+
+// 给合约的已知函数加类型
+export interface HelloWorldContract extends ethers.Contract {
+  getUsername(addr: string): Promise<string>
+  setUsername(name: string): Promise<ethers.providers.TransactionResponse>
+}
+
+export const newHelloWorldContract = (address: string, signerOrProvider: ethers.providers.Provider | ethers.Signer): HelloWorldContract => {
+  return new ethers.Contract(address, HelloWorld, signerOrProvider) as HelloWorldContract
 }

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ethers } from 'ethers'
 import { storeToRefs } from 'pinia'
-import HelloWorld from '~/abi/HelloWorld.json'
+import Swal from 'sweetalert2'
+import { newHelloWorldContract } from '~/utils/eth'
 
 // 一个存用户名的合约
 const contractAddress = '0x43c6a3a783882c1862fa543366fe531381ae4c60'
@@ -12,15 +12,45 @@ const user = useUserStore()
 const { address } = storeToRefs(user)
 
 // 与合约交互，设置用户名
-const setUsername = () => {
+const setUsername = async () => {
+  if (usernameInput.value.length < 3) {
+    Swal.fire({
+      text: '用户名至少要有两个字符',
+    })
+    return
+  }
 
+  const p = user.getProvider()
+  if (!p) {
+    Swal.fire({
+      text: '请先连接钱包',
+    })
+    return
+  }
+  const c = newHelloWorldContract(contractAddress, p.getSigner())
+  // 是否忽略错误强制发送交易
+  try {
+    const tx = await c.setUsername(usernameInput.value)
+    Swal.fire({
+      text: '设置用户名交易发送成功',
+    })
+    await tx.wait(2)
+    Swal.fire({
+      text: '交易已被至少两个区块确认',
+    })
+  }
+  catch (e) {
+    Swal.fire({
+      text: `交易发送失败 ${(e as Error).message}`,
+    })
+  }
 }
 
 // 与合约交互，查询用户名
 const getUsername = async (address: string): Promise<string> => {
   // 使用扩展钱包与合约交互
-  const c = new ethers.Contract(contractAddress, HelloWorld, user.getProvider())
-  return await c.callStatic.getUsername(address)
+  const c = newHelloWorldContract(contractAddress, user.getProvider()!.getSigner())
+  return c.getUsername(address)
 }
 
 // 监听已连接账户变化
@@ -36,8 +66,14 @@ watch([address], ([newAddress], [oldAddress]) => {
     username.value = ''
     return
   }
-  // eslint-disable-next-line no-console
+
   getUsername(newVal).then(v => username.value = v).catch(e => console.log(e))
+})
+
+// 进入时获取用户名
+onMounted(() => {
+  if (address.value.length && address.value[0])
+    getUsername(address.value[0]).then(v => username.value = v).catch(e => console.log(e))
 })
 </script>
 

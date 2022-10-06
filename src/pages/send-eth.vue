@@ -36,8 +36,15 @@ const { address } = storeToRefs(user)
 // }
 // 用扩展钱包发起转账请求
 const transferByExtensionWallet = async () => {
+  const p = user.getProvider()
+  if (!p) {
+    Swal.fire({
+      text: '请先连接钱包',
+    })
+    return
+  }
   // 获取签名者
-  const signer = user.getProvider()!.getSigner()
+  const signer = p.getSigner()
   try {
     // 发送交易
     const tx = await signer.sendTransaction({
