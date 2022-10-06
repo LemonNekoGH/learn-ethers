@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@7.8.0",
   "scripts": {
-    "build": "vite build && echo 'learn-ehters.lemonneko.moe' > ./dist/CNAME",
+    "build": "vite build && echo 'learn-ethers.lemonneko.moe' > ./dist/CNAME",
     "dev": "vite --port 3340 --host 0.0.0.0",
     "lint": "eslint .",
     "preview": "vite preview",
