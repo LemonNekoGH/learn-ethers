@@ -23,3 +23,9 @@ declare module '*.vue' {
   const component: DefineComponent<{}, {}, any>
   export default component
 }
+
+// https://github.com/WalletConnect/walletconnect-monorepo/issues/341
+declare module '@walletconnect/web3-provider/dist/umd/index.min.js' {
+  import WalletConnectProvider from '@walletconnect/web3-provider/dist/esm/index';
+  export default WalletConnectProvider 
+}

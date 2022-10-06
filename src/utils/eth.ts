@@ -1,3 +1,6 @@
+// https://github.com/WalletConnect/walletconnect-monorepo/issues/341
+import WalletConnectProvider from '@walletconnect/web3-provider/dist/umd/index.min.js'
+
 export const providerNames = ['MetaMask', 'Coinbase Wallet', 'Trust Wallet', 'Binance Wallet', 'Wallet Connect'] as const
 export type ProviderName = typeof providerNames[number]
 export const providerMap: Record<Exclude<ProviderName, 'Binance Wallet' | 'Wallet Connect'>, string> = {
@@ -10,10 +13,13 @@ export const providerMap: Record<Exclude<ProviderName, 'Binance Wallet' | 'Walle
  * 从注入的 window.ethereum 中取出需要的提供者
  * @param property 用于检测是否是需要的那个
  */
-export const getProvider = (property: ProviderName): MyProvider | undefined => {
+export const getProvider = (property: ProviderName): MyProvider | WalletConnectProvider | undefined => {
   // 标准钱包连接
-  if (property === 'Wallet Connect')
-    return
+  if (property === 'Wallet Connect') {
+    return new WalletConnectProvider({
+      infuraId: '5bd2398e9fcc41c099cbac59722aef62',
+    })
+  }
 
   // 币安钱包不使用标准的 window.ethereum
   if (property === 'Binance Wallet') {

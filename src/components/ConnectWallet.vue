@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import Swal from 'sweetalert2'
 import { ethers } from 'ethers'
-import WalletConnect from '@walletconnect/client'
-import QRCodeModal from '@walletconnect/qrcode-modal'
 import { storeToRefs } from 'pinia'
+// https://github.com/WalletConnect/walletconnect-monorepo/issues/341
+import WalletConnectProvider from '@walletconnect/web3-provider/dist/umd/index.min.js'
 import type { ProviderName } from '~/utils/eth'
 import { getProvider, providerNames } from '~/utils/eth'
 
-const { address: account, chainId: currentChain, providerName } = storeToRefs(useUserStore())
+const user = useUserStore()
+const { address: account, chainId: currentChain } = storeToRefs(user)
 
 // 处理网络变化事件
 const handleChainChanged = (e: string) => {
@@ -25,65 +26,61 @@ const showConnectDialog = ref(false)
      * 使用 WalletConnect 开源协议进行连接
      * https://docs.walletconnect.com/quick-start/dapps/client
      */
-const connectToWalletConnect = async () => {
-  // Create a connector
-  const connector = new WalletConnect({
-    bridge: 'https://bridge.walletconnect.org', // Required
-    qrcodeModal: QRCodeModal,
-  })
-  // 如果没有连接，尝试连接
-  if (!connector.connected) {
-    connector.createSession()
-  }
-  else {
-    // 已连接，直接获取账户信息
-    account.value = connector.accounts
-    currentChain.value = connector.chainId.toString(16)
-  }
+// const connectToWalletConnect = async () => {
+//   // Create a connector
+//   const connector = new WalletConnect({
+//     bridge: 'https://bridge.walletconnect.org', // Required
+//     qrcodeModal: QRCodeModal,
+//   })
+//   // 如果没有连接，尝试连接
+//   if (!connector.connected) {
+//     connector.createSession()
+//   }
+//   else {
+//     // 已连接，直接获取账户信息
+//     account.value = connector.accounts
+//     currentChain.value = connector.chainId.toString(16)
+//   }
 
-  // 监听连接事件
-  connector.on('connect', (err, payload) => {
-    if (err) {
-      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
-      return
-    }
-    account.value = payload.params[0].accounts
-    currentChain.value = payload.params[0].chainId
-  })
-  // 监听断开事件
-  connector.on('disconnect', (err, payload) => {
-    if (err) {
-      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
-      return
-    }
-    // 移除账户和网络信息
-    account.value = []
-    currentChain.value = ''
-  })
-  // 监听会话更新事件
-  // 当切换网络或者账户时会触发
-  connector.on('session_update', (err, payload) => {
-    if (err) {
-      Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
-      return
-    }
-    account.value = payload.params[0].accounts
-    currentChain.value = payload.params[0].chainId
-  })
+//   // 监听连接事件
+//   connector.on('connect', (err, payload) => {
+//     if (err) {
+//       Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+//       return
+//     }
+//     account.value = payload.params[0].accounts
+//     currentChain.value = payload.params[0].chainId
+//   })
+//   // 监听断开事件
+//   connector.on('disconnect', (err, payload) => {
+//     if (err) {
+//       Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+//       return
+//     }
+//     // 移除账户和网络信息
+//     account.value = []
+//     currentChain.value = ''
+//   })
+//   // 监听会话更新事件
+//   // 当切换网络或者账户时会触发
+//   connector.on('session_update', (err, payload) => {
+//     if (err) {
+//       Swal.fire({ text: `WalletConnect 连接失败 ${err.message}` })
+//       return
+//     }
+//     account.value = payload.params[0].accounts
+//     currentChain.value = payload.params[0].chainId
+//   })
 
-  providerName.value = 'Wallet Connect'
-  showConnectDialog.value = false
-}
+//   providerName.value = 'Wallet Connect'
+//   showConnectDialog.value = false
+// }
 
 /**
 * 连接钱包
 * @param property 用于检测是否已安装钱包
 */
 const connectToWallet = async (pn: ProviderName) => {
-  if (pn === 'Wallet Connect') {
-    connectToWalletConnect()
-    return
-  }
   const p = getProvider(pn)
   if (!p) {
     // 如果没有被注入变量，说明钱包扩展不存在
@@ -95,11 +92,15 @@ const connectToWallet = async (pn: ProviderName) => {
 
   try {
     // 连接钱包
-    const provider = new ethers.providers.Web3Provider(p)
-    providerName.value = pn
-    const acct = await provider.send('eth_requestAccounts', [])
-    account.value = acct
-    currentChain.value = (await provider.getNetwork()).chainId.toString(16)
+    user.setProvider(new ethers.providers.Web3Provider(p))
+    if (p instanceof WalletConnectProvider) {
+      account.value = await p.enable()
+    }
+    else {
+      const acct = await user.getProvider()!.send('eth_requestAccounts', [])
+      account.value = acct
+    }
+    currentChain.value = (await user.getProvider()!.getNetwork()).chainId.toString(16)
     // 监听需要的事件
     // window.BinanceChain 不支持 addListener 别名
     p.on('chainChanged', handleChainChanged)

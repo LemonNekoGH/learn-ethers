@@ -9,8 +9,6 @@ declare module '@vue/runtime-core' {
   export interface GlobalComponents {
     ConnectStatus: typeof import('./components/ConnectStatus.vue')['default']
     ConnectWallet: typeof import('./components/ConnectWallet.vue')['default']
-    Counter: typeof import('./components/Counter.vue')['default']
-    Footer: typeof import('./components/Footer.vue')['default']
     README: typeof import('./components/README.md')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

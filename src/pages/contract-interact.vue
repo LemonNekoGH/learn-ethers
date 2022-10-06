@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ethers } from 'ethers'
 import { storeToRefs } from 'pinia'
-import { getProvider } from '~/utils/eth'
 import HelloWorld from '~/abi/HelloWorld.json'
 
 // 一个存用户名的合约
@@ -10,7 +9,7 @@ const username = ref('')
 const usernameInput = ref('')
 
 const user = useUserStore()
-const { address, providerName } = storeToRefs(user)
+const { address } = storeToRefs(user)
 
 // 与合约交互，设置用户名
 const setUsername = () => {
@@ -19,15 +18,8 @@ const setUsername = () => {
 
 // 与合约交互，查询用户名
 const getUsername = async (address: string): Promise<string> => {
-  const p = getProvider(providerName.value!)
-  if (!p) {
-    if (providerName.value !== 'Wallet Connect')
-      return ''
-
-    // TODO:使用 WalletConnect 与合约交互
-  }
   // 使用扩展钱包与合约交互
-  const c = new ethers.Contract(contractAddress, HelloWorld, new ethers.providers.Web3Provider(p!))
+  const c = new ethers.Contract(contractAddress, HelloWorld, user.getProvider())
   return await c.callStatic.getUsername(address)
 }
 
