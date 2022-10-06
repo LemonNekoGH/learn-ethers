@@ -1,0 +1,1 @@
+import{d as c,o as a,c as s,b as t,k as _,e,l as i,i as n}from"./index.093eba87.js";const l=e("div",{"text-4xl":""},[e("div",{"i-carbon-campsite":"","inline-block":""})],-1),r=e("p",null," Learn Ethers ",-1),p=c({__name:"connect-wallet",setup(d){return(m,f)=>{const o=i;return a(),s("div",null,[l,r,t(o),t(_)])}}});typeof n=="function"&&n(p);export{p as default};
